@@ -1,35 +1,54 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useEffect } from "react";
+import {Loader} from "lucide-react"
+import HomePage from "./pages/HomePage";
+import Navbar from "./components/Navbar";
+import SignUpPage from "./pages/SignUpPage";
+import LoginPage from "./pages/LoginPage";
+import ProfilePage from "./pages/ProfilePage";
+import SettingsPage from "./pages/SettingsPage";
+import { useAuthStore } from "./store/useAuthStore.js";
+import {Routes,Route, Navigate} from "react-router-dom"
+import {Toaster} from "react-hot-toast"
+import { useThemeStore } from "./store/useThemeStore.js";
 
-function App() {
-  const [count, setCount] = useState(0)
 
+
+const App = () => {
+
+  const {authUser,checkAuth,isCheckingAuth} = useAuthStore()
+  const {theme}=useThemeStore()
+
+  useEffect(()=>{
+    checkAuth()
+   
+  },[checkAuth])
+   
+  if(isCheckingAuth && !authUser)return(
+    <div className="flex items-center  justify-center h-screen">
+    <Loader clasName="size-10 animate-spin"/>
+  </div>
+  )
+
+ 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <div data-theme={theme} className="h-full">
+      <Navbar />
+      <Routes>
+        <Route path="/" element={authUser ?<HomePage />:<Navigate to="/login"/>} />
+        <Route path="/signup" element={!authUser?<SignUpPage/>:<Navigate to="/"/>} />
+        <Route path="/login" element={!authUser?<LoginPage/>:<Navigate to="/"/>} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/profile" element={authUser ?<ProfilePage />:<Navigate to="/login"/>} />
+      </Routes>
 
-export default App
+      <Toaster
+      position="bottom-center"
+      reverseOrder={false}
+      />
+      </div>
+    </>
+  );
+};
+
+export default App;
