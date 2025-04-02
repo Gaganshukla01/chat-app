@@ -1,6 +1,8 @@
 import User from "../models/user.model.js"
 import Message from "../models/message.model.js";
 import cloudinary from "../lib/cloudniary.js";
+import { getReceiverSocketId,io } from "../lib/socket.js";
+
 
 
 export const getAllUsers=async(req,res)=>{
@@ -37,25 +39,34 @@ export const getMessage=async(req,res)=>{
 export const sendMessage= async (req,res)=>{
     try {
         const {text,image}=req.body
-        const {id:recieverId}=req.params
+        const {id:receiverId}=req.params
+        
+        const senderId = req.user._id;
 
-        if(image){
-            const imageResponse= await cloudinary.uploader.upload(image)
-            const imgUrl=imageResponse.secureUrl
-
-        }
+        // for cloudniary
+        // let imgUrl
+        // if(image){
+        //     const imageResponse= await cloudinary.uploader.upload(image)
+        //     imgUrl=imageResponse.secureUrl
+            
+        // }
 
         const newMessage= new Message({
               senderId,
-              recieverId,
+              receiverId,
               text,
-              image:imgUrl
+              image
         })
 
         await newMessage.save()
 
-        // realtime fun goes here socket.io
+        // realtime socket fun to handle 
+        const receiverSocketId=getReceiverSocketId(receiverId)
+        if(receiverSocketId){
+            io.to(receiverSocketId).emit("newMessage",newMessage)
+        }
 
+        res.status(201).json(newMessage);
     } catch (error) {
         return res.status(400).json({message:error.message})
     }

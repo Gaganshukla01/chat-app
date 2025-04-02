@@ -6,10 +6,11 @@ import bodyParser from "body-parser"
 import cookieParser from "cookie-parser"
 import apiRoutes from "./routes/auth.route.js"
 import messageRoutes from "./routes/message.route.js"
+import {app,server} from "./lib/socket.js"
 
 
 dotenv.config()
-const app=express()
+
 const PORT=process.env.PORT||4000
 app.use(bodyParser.urlencoded({extended: true}))
 app.use(cors({
@@ -23,7 +24,7 @@ app.use("/api/auth",apiRoutes)
 app.use("/api/message",messageRoutes)
 
 connectDb()
-app.listen(PORT,(req,res)=>{
+server.listen(PORT,(req,res)=>{
     console.log("Server is Running on: ")
     console.log(`http://localhost:${PORT}`)
 })

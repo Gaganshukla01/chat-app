@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { genrateToken } from "../lib/utils.js";
 import cloudinary from "../lib/cloudniary.js";
 
+
 export const signup = async (req, res) => {
   const { fullName, email, password } = req.body;
   try {
@@ -39,9 +40,10 @@ export const signup = async (req, res) => {
 
       res.status(201).json({
         _id: newUser._id,
-        fullname: newUser.fullName,
+        fullName: newUser.fullName,
         email: newUser.email,
-        profilePic: newUser.profilePicture,
+        profilePic: newUser.profilePic,
+  
       });
     } else {
       return res
@@ -77,9 +79,9 @@ export const login = async (req, res) => {
 
     res.status(201).json({
       _id: user._id,
-      fullname: user.fullName,
+      fullName: user.fullName,
       email: user.email,
-      profilePic: user.profilePicture,
+      profilePic: user.profilePic,
     });
   } catch (error) {
     return res.status(400).json({ message: error.message });
