@@ -7,7 +7,6 @@ import cookieParser from "cookie-parser"
 import apiRoutes from "./routes/auth.route.js"
 import messageRoutes from "./routes/message.route.js"
 import {app,server} from "./lib/socket.js"
-import Message from "./models/message.model.js"
 
 
 dotenv.config()
