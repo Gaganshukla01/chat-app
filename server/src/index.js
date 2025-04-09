@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser"
 import apiRoutes from "./routes/auth.route.js"
 import messageRoutes from "./routes/message.route.js"
 import {app,server} from "./lib/socket.js"
+import Message from "./models/message.model.js"
 
 
 dotenv.config()
@@ -23,6 +24,10 @@ app.use(express.json())
 app.use(cookieParser())
 app.use("/api/auth",apiRoutes)
 app.use("/api/message",messageRoutes)
+
+app.get("/",(req,res)=>{
+   return res.json({Message:"I am working"})
+})
 
 connectDb()
 server.listen(PORT,(req,res)=>{
