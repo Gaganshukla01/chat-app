@@ -12,9 +12,10 @@ import {app,server} from "./lib/socket.js"
 dotenv.config()
 
 const PORT=process.env.PORT||4000
+const Fronted_Url=process.env.FRONTED_URL
 app.use(bodyParser.urlencoded({extended: true}))
 app.use(cors({
-    origin:"http://localhost:5173",
+    origin:Fronted_Url,
     credentials:true
 }))
 
