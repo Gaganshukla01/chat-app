@@ -11,8 +11,6 @@ import {Routes,Route, Navigate} from "react-router-dom"
 import {Toaster} from "react-hot-toast"
 import { useThemeStore } from "./store/useThemeStore.js";
 
-
-
 const App = () => {
 
   const {authUser,checkAuth,isCheckingAuth,onlineUsers} = useAuthStore()
