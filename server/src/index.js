@@ -18,9 +18,9 @@ app.use(cors({
   origin: Fronted_Url,
   credentials: true
 }))
-
 app.use(express.json())
 app.use(cookieParser())
+
 app.use("/api/auth", apiRoutes)
 app.use("/api/message", messageRoutes)
 
@@ -28,16 +28,10 @@ app.get("/", (req, res) => {
   return res.json({ Message: "I am working" })
 })
 
-
 connectDb()
 
-
-if (process.env.NODE_ENV !== 'production') {
-  server.listen(PORT, () => {
-    console.log("Server is Running on: ")
-    console.log(`http://localhost:${PORT}`)
-  })
-}
-
+server.listen(PORT, () => {   
+  console.log(`Server is Running on port ${PORT}`)
+})
 
 export default app
