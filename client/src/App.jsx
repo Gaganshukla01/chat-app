@@ -23,11 +23,16 @@ const App = () => {
 
   useEffect(() => {
     if (authUser) {
-      subscribeToMessage();
+      // small timeout to ensure socket is connected first
+      const timer = setTimeout(() => {
+        subscribeToMessage();
+      }, 500);
+      return () => {
+        clearTimeout(timer);
+        unSubscribeFromMessage();
+      };
     }
-    return () => unSubscribeFromMessage();
   }, [authUser]);
-
   if (isCheckingAuth && !authUser)
     return (
       <div className="flex items-center justify-center h-screen">

@@ -82,13 +82,19 @@ export const useMessageStore = create((set, get) => ({
 
   subscribeToMessage: () => {
     const socket = useAuthStore.getState().socket;
+    if (!socket) return;
+
+    socket.off("newMessage");
+    socket.off("messageDeleted");
+    socket.off("messageUpdated");
 
     socket.on("newMessage", (newMessage) => {
+      // 👇 always get FRESH state, not stale closure
       const { selectedUser, unreadCounts, messages } = get();
 
-      // chat is open with this sender → show message directly
       if (selectedUser && newMessage.senderId === selectedUser._id) {
-        set({ messages: [...messages, { ...newMessage, isNew: true }] });
+        // chat is open with this person → add message
+        set({ messages: [...get().messages, { ...newMessage, isNew: true }] });
       } else {
         // chat not open → increment unread count
         set({
