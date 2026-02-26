@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
 
-export const useMessageStore = create((set,get) => ({
+export const useMessageStore = create((set, get) => ({
   messages: [],
   users: [],
   selectedUser: null,
@@ -23,12 +23,9 @@ export const useMessageStore = create((set,get) => ({
   },
 
   getMessages: async (userId) => {
-
     set({ isMessagesLoading: true });
     try {
       const res = await axiosInstance.get(`/message/${userId}`);
-      console.log("i am here")
-      console.log(res.data)
       set({ messages: res.data });
     } catch (error) {
       toast.error(error.response.data.message);
@@ -37,40 +34,80 @@ export const useMessageStore = create((set,get) => ({
     }
   },
 
-  sendMessage:async(messageData)=>{
-    
-    const{selectedUser,messages}=get()
+  sendMessage: async (messageData) => {
+    const { selectedUser, messages } = get();
     try {
-      const res=await axiosInstance.post(`/message/send/${selectedUser._id}`,messageData)
-      set({messages:[...messages,res.data]}) 
-   
+      const res = await axiosInstance.post(
+        `/message/send/${selectedUser._id}`,
+        messageData,
+      );
+      set({ messages: [...messages, res.data] });
     } catch (error) {
-      toast.error(error.response.data.message)
+      toast.error(error.response.data.message);
     }
-     
   },
 
-  subscribeToMessage:()=>{
-    const {selectedUser}=get()
-
-    if(!selectedUser) return
-
-    const socket=useAuthStore.getState().socket     
-    socket.on("newMessage",(newMessage)=>{
-        
-      if(newMessage.senderId!==selectedUser._id) return;
-      set({
-        messages:[...get().messages,newMessage],
-      })
-
-    })
-
+  deleteMessage: async (messageId) => {
+    try {
+      await axiosInstance.delete(`/message/${messageId}`);
+      set((state) => ({
+        messages: state.messages.filter((m) => m._id !== messageId),
+      }));
+      toast.success("Message deleted");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete");
+    }
   },
 
-  unSubscribeFromMessage:()=>{
-    const socket=useAuthStore.getState().socket
-    socket.off("newMessage")
+  updateMessage: async (messageId, newText) => {
+    try {
+      const res = await axiosInstance.put(`/message/${messageId}`, {
+        text: newText,
+      });
+      set((state) => ({
+        messages: state.messages.map((m) =>
+          m._id === messageId ? res.data : m,
+        ),
+      }));
+      toast.success("Message updated");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update");
+    }
   },
 
-  setSelectedUser:(selectedUser)=>set({ selectedUser }),
+  subscribeToMessage: () => {
+    const { selectedUser } = get();
+    if (!selectedUser) return;
+    const socket = useAuthStore.getState().socket;
+
+    socket.on("newMessage", (newMessage) => {
+      if (newMessage.senderId !== selectedUser._id) return;
+      set({ messages: [...get().messages, { ...newMessage, isNew: true }] });
+    });
+
+    // 🗑️ someone deleted a message
+    socket.on("messageDeleted", (messageId) => {
+      set((state) => ({
+        messages: state.messages.filter((m) => m._id !== messageId),
+      }));
+    });
+
+    // ✏️ someone edited a message
+    socket.on("messageUpdated", (updatedMessage) => {
+      set((state) => ({
+        messages: state.messages.map((m) =>
+          m._id === updatedMessage._id ? updatedMessage : m,
+        ),
+      }));
+    });
+  },
+
+  unSubscribeFromMessage: () => {
+    const socket = useAuthStore.getState().socket;
+    socket.off("newMessage");
+    socket.off("messageDeleted");
+    socket.off("messageUpdated");
+  },
+
+  setSelectedUser: (selectedUser) => set({ selectedUser }),
 }));
