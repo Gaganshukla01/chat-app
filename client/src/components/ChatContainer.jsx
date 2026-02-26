@@ -23,7 +23,7 @@ const ChatContainer = () => {
   const { authUser, onlineUsers } = useAuthStore();
   const messageRef = useRef(null);
   const [hoveredMessage, setHoveredMessage] = useState(null);
-  const [editingMessage, setEditingMessage] = useState(null); // { id, text }
+  const [editingMessage, setEditingMessage] = useState(null);
 
   useEffect(() => {
     getMessages(selectedUser._id);
@@ -52,19 +52,24 @@ const ChatContainer = () => {
 
   if (isMessagesLoading) {
     return (
-      <div className="flex-1 flex-col flex overflow-auto">
+      <div className="flex flex-col overflow-hidden" style={{ height: "100%" }}>
         <ChatHeader />
-        <MessageSkeleton />
-        <MessageInput />
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <MessageSkeleton />
+        </div>
+        <div className="shrink-0">
+          <MessageInput />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden h-full">
+    <div className="flex flex-col overflow-hidden" style={{ height: "100%" }}>
       <ChatHeader />
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages scroll area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {messages.map((message, index) => {
           const isOwn = message.senderId === authUser._id;
           const isNew = message.isNew;
@@ -159,11 +164,9 @@ const ChatContainer = () => {
                   message.text && <p>{message.text}</p>
                 )}
 
-                {/* Action buttons on hover — own messages only */}
+                {/* 🗑️ ✏️ Action buttons on hover — own messages only */}
                 {isOwn && hoveredMessage === message._id && !isEditing && (
-                  <div
-                    className={`absolute -top-7 flex gap-1 ${isOwn ? "right-0" : "left-0"}`}
-                  >
+                  <div className="absolute -top-7 right-0 flex gap-1">
                     {message.text && (
                       <button
                         onClick={() =>
@@ -195,7 +198,10 @@ const ChatContainer = () => {
         })}
       </div>
 
-      <MessageInput />
+      {/* Input pinned at bottom */}
+      <div className="shrink-0">
+        <MessageInput />
+      </div>
     </div>
   );
 };
