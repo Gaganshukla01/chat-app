@@ -9,6 +9,7 @@ export const useMessageStore = create((set, get) => ({
   selectedUser: null,
   isUsersLoading: false,
   isMessagesLoading: false,
+  unreadCounts: {},
 
   getUsers: async () => {
     set({ isUsersLoading: true });
@@ -26,7 +27,11 @@ export const useMessageStore = create((set, get) => ({
     set({ isMessagesLoading: true });
     try {
       const res = await axiosInstance.get(`/message/${userId}`);
-      set({ messages: res.data });
+      set({
+        messages: res.data,
+        // clear unread when chat opened
+        unreadCounts: { ...get().unreadCounts, [userId]: 0 },
+      });
     } catch (error) {
       toast.error(error.response.data.message);
     } finally {
@@ -76,23 +81,31 @@ export const useMessageStore = create((set, get) => ({
   },
 
   subscribeToMessage: () => {
-    const { selectedUser } = get();
-    if (!selectedUser) return;
     const socket = useAuthStore.getState().socket;
 
     socket.on("newMessage", (newMessage) => {
-      if (newMessage.senderId !== selectedUser._id) return;
-      set({ messages: [...get().messages, { ...newMessage, isNew: true }] });
+      const { selectedUser, unreadCounts, messages } = get();
+
+      // chat is open with this sender → show message directly
+      if (selectedUser && newMessage.senderId === selectedUser._id) {
+        set({ messages: [...messages, { ...newMessage, isNew: true }] });
+      } else {
+        // chat not open → increment unread count
+        set({
+          unreadCounts: {
+            ...unreadCounts,
+            [newMessage.senderId]: (unreadCounts[newMessage.senderId] || 0) + 1,
+          },
+        });
+      }
     });
 
-    // 🗑️ someone deleted a message
     socket.on("messageDeleted", (messageId) => {
       set((state) => ({
         messages: state.messages.filter((m) => m._id !== messageId),
       }));
     });
 
-    // ✏️ someone edited a message
     socket.on("messageUpdated", (updatedMessage) => {
       set((state) => ({
         messages: state.messages.map((m) =>
