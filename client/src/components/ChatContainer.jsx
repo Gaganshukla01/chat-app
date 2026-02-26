@@ -1,6 +1,5 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useMessageStore } from "../store/useMessageStore";
-import { useEffect } from "react";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import MessageSkeleton from "./Skeleton/MessageSkeleton";
@@ -21,6 +20,8 @@ const ChatContainer = () => {
 
   const { authUser, onlineUsers } = useAuthStore();
   const messageRef = useRef(null);
+  const hoverTimeoutRef = useRef(null);
+
   const [hoveredMessage, setHoveredMessage] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
 
@@ -39,6 +40,22 @@ const ChatContainer = () => {
       messageRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  // cleanup hover timeout
+  useEffect(() => {
+    return () => clearTimeout(hoverTimeoutRef.current);
+  }, []);
+
+  const handleMouseEnter = (messageId) => {
+    clearTimeout(hoverTimeoutRef.current);
+    setHoveredMessage(messageId);
+  };
+
+  const handleMouseLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredMessage(null);
+    }, 300);
+  };
 
   const handleEditSave = async (messageId) => {
     if (!editingMessage.text.trim()) return;
@@ -68,9 +85,8 @@ const ChatContainer = () => {
   const handleTouchEnd = (message) => {
     if (Math.abs(swipeX) >= 50 && !swipeTriggered) {
       setSwipeTriggered(true);
-      setReplyToMessage(message); // ✅ this sets it in the input
+      setReplyToMessage(message);
     }
-    // animate back
     setSwipeX(0);
     setSwipingId(null);
     setTouchStartX(null);
@@ -118,8 +134,8 @@ const ChatContainer = () => {
             >
               <div
                 className={`flex items-end w-full ${isOwn ? "justify-end" : "justify-start"}`}
-                onMouseEnter={() => setHoveredMessage(message._id)}
-                onMouseLeave={() => setHoveredMessage(null)}
+                onMouseEnter={() => handleMouseEnter(message._id)}
+                onMouseLeave={handleMouseLeave}
                 onTouchStart={(e) => handleTouchStart(e, message)}
                 onTouchMove={(e) => handleTouchMove(e, message)}
                 onTouchEnd={() => handleTouchEnd(message)}
@@ -252,13 +268,12 @@ const ChatContainer = () => {
                         )
                       )}
 
-                      {/* ✅ Hover action buttons — fixed positioning */}
+                      {/* ✅ Hover action buttons */}
                       {hoveredMessage === message._id && !isEditing && (
                         <div
-                          className={`
-                          absolute -top-8 flex gap-1 z-10
-                          ${isOwn ? "right-0" : "left-0"}
-                        `}
+                          className={`absolute -top-8 flex gap-1 z-20 ${isOwn ? "right-0" : "left-0"}`}
+                          onMouseEnter={() => handleMouseEnter(message._id)}
+                          onMouseLeave={handleMouseLeave}
                         >
                           {/* Reply — all messages */}
                           <button
@@ -302,7 +317,7 @@ const ChatContainer = () => {
                       )}
                     </div>
 
-                    {/* Time */}
+                    {/* Time + edited + new */}
                     <div className="flex items-center gap-1 mt-1 px-1">
                       <time className="text-xs opacity-40">
                         {formatMessageTime(message.createdAt)}
