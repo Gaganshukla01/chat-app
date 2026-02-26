@@ -173,7 +173,7 @@ const ChatContainer = () => {
 
                   {/* Bubble — wider */}
                   <div
-                    className={`flex flex-col max-w-[85%] md:max-w-[70%] ${isOwn ? "items-end" : "items-start"}`}
+                    className={`flex flex-col max-w-[100%] md:max-w-[70%] ${isOwn ? "items-end" : "items-start"}`}
                   >
                     <div className="relative overflow-visible">
                       {/* Quoted reply */}
