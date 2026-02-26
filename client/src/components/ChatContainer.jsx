@@ -24,7 +24,6 @@ const ChatContainer = () => {
 
   const [hoveredMessage, setHoveredMessage] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
-
   const [touchStartX, setTouchStartX] = useState(null);
   const [swipingId, setSwipingId] = useState(null);
   const [swipeX, setSwipeX] = useState(0);
@@ -72,11 +71,8 @@ const ChatContainer = () => {
     if (!touchStartX) return;
     const diff = e.touches[0].clientX - touchStartX;
     const isOwn = message.senderId === authUser._id;
-    if (isOwn && diff < 0) {
-      setSwipeX(Math.max(diff, -65));
-    } else if (!isOwn && diff > 0) {
-      setSwipeX(Math.min(diff, 65));
-    }
+    if (isOwn && diff < 0) setSwipeX(Math.max(diff, -65));
+    else if (!isOwn && diff > 0) setSwipeX(Math.min(diff, 65));
   };
 
   const handleTouchEnd = (message) => {
@@ -109,7 +105,7 @@ const ChatContainer = () => {
     <div className="flex flex-col flex-1 overflow-hidden">
       <ChatHeader />
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+      <div className="flex-1 overflow-y-auto p-4 space-y-1 min-h-0">
         {messages.length === 0 && (
           <div className="flex items-center justify-center h-full text-base-content/40 text-sm">
             No messages yet. Say hi! 👋
@@ -123,10 +119,20 @@ const ChatContainer = () => {
           const isEditing = editingMessage?.id === message._id;
           const isSwiping = swipingId === message._id;
 
+          // check if next message is from same sender (for avatar grouping)
+          const nextMessage = messages[index + 1];
+          const isLastInGroup =
+            !nextMessage || nextMessage.senderId !== message.senderId;
+
+          // check if prev message is from same sender (for top spacing)
+          const prevMessage = messages[index - 1];
+          const isFirstInGroup =
+            !prevMessage || prevMessage.senderId !== message.senderId;
+
           return (
             <div
               key={message._id}
-              className="flex flex-col"
+              className={`flex flex-col ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}
               ref={isLast ? messageRef : null}
             >
               <div
@@ -137,14 +143,18 @@ const ChatContainer = () => {
                 onTouchMove={(e) => handleTouchMove(e, message)}
                 onTouchEnd={() => handleTouchEnd(message)}
               >
-                {/* Avatar — received only */}
+                {/* Avatar — received only, only show on last in group */}
                 {!isOwn && (
                   <div className="relative shrink-0 mr-2 self-end">
-                    <img
-                      src={selectedUser.profilePic || "/avatar.png"}
-                      alt="profile pic"
-                      className="size-8 rounded-full border object-cover"
-                    />
+                    {isLastInGroup ? (
+                      <img
+                        src={selectedUser.profilePic || "/avatar.png"}
+                        alt="profile pic"
+                        className="size-8 rounded-full border object-cover"
+                      />
+                    ) : (
+                      <div className="size-8" />
+                    )}
                   </div>
                 )}
 
@@ -158,30 +168,29 @@ const ChatContainer = () => {
                     transition: isSwiping ? "none" : "transform 0.25s ease",
                   }}
                 >
-                  {/* Reply icon while swiping */}
                   {isSwiping && Math.abs(swipeX) > 20 && (
                     <div className={`${isOwn ? "ml-1" : "mr-1"}`}>
                       <Reply size={18} className="text-primary" />
                     </div>
                   )}
 
-                  {/* Bubble */}
+                  {/* Bubble — wider on desktop */}
                   <div
-                    className={`flex flex-col max-w-[65%] ${isOwn ? "items-end" : "items-start"}`}
+                    className={`flex flex-col max-w-[75%] md:max-w-[55%] ${isOwn ? "items-end" : "items-start"}`}
                   >
                     <div className="relative">
-                      {/* Quoted reply preview */}
+                      {/* Quoted reply */}
                       {message.replyTo && (
                         <div
-                          className={`mb-1 px-2 py-1.5 rounded-lg text-xs border-l-[3px] border-primary/80
-                          ${isOwn ? "bg-black/20 rounded-br-none" : "bg-black/10 rounded-bl-none"}`}
+                          className={`mb-0.5 px-3 py-2 rounded-xl text-xs border-l-[3px] border-primary/80 cursor-pointer
+                          ${isOwn ? "bg-primary/10" : "bg-base-300/80"}`}
                         >
                           <p className="text-primary font-semibold text-[11px] mb-0.5">
                             {message.replyTo.senderId === authUser._id
                               ? "You"
                               : selectedUser.fullName}
                           </p>
-                          <p className="opacity-50 truncate max-w-[180px] text-[11px] leading-relaxed">
+                          <p className="opacity-60 truncate max-w-[220px] text-[11px]">
                             {message.replyTo.audio
                               ? "🎤 Voice message"
                               : message.replyTo.image && !message.replyTo.text
@@ -196,7 +205,7 @@ const ChatContainer = () => {
                         <img
                           src={message.image}
                           alt="Attachment"
-                          className="max-w-[200px] rounded-xl mb-1 object-cover"
+                          className="max-w-[250px] rounded-xl mb-1 object-cover"
                         />
                       )}
 
@@ -210,7 +219,7 @@ const ChatContainer = () => {
                           <audio
                             src={message.audio}
                             controls
-                            className="h-8 max-w-[180px]"
+                            className="h-8 max-w-[200px]"
                           />
                         </div>
                       )}
@@ -218,14 +227,13 @@ const ChatContainer = () => {
                       {/* Text bubble */}
                       {!isEditing && message.text && (
                         <div
-                          className={`px-3 py-2 rounded-2xl text-sm break-words leading-relaxed
+                          className={`px-4 py-2 text-sm break-words leading-relaxed
+                          ${message.replyTo ? "rounded-b-2xl rounded-tr-2xl rounded-tl-sm" : "rounded-2xl"}
                           ${
                             isOwn
-                              ? "bg-primary text-primary-content rounded-br-none"
-                              : "bg-base-300 text-base-content rounded-bl-none"
-                          }
-                          ${message.replyTo ? "rounded-tl-sm rounded-tr-sm" : ""}
-                        `}
+                              ? `bg-primary text-primary-content ${!message.replyTo ? "rounded-br-none" : ""}`
+                              : `bg-base-300 text-base-content ${!message.replyTo ? "rounded-bl-none" : ""}`
+                          }`}
                         >
                           {message.text}
                         </div>
@@ -233,7 +241,7 @@ const ChatContainer = () => {
 
                       {/* Edit mode */}
                       {isEditing && (
-                        <div className="flex items-center gap-2 min-w-[180px]">
+                        <div className="flex items-center gap-2 min-w-[200px]">
                           <input
                             type="text"
                             className="input input-sm flex-1 text-base-content bg-base-200 rounded"
@@ -253,13 +261,13 @@ const ChatContainer = () => {
                           />
                           <button
                             onClick={() => handleEditSave(message._id)}
-                            className="text-green-500 hover:text-green-400"
+                            className="text-green-500"
                           >
                             <Check size={16} />
                           </button>
                           <button
                             onClick={() => setEditingMessage(null)}
-                            className="text-red-500 hover:text-red-400"
+                            className="text-red-500"
                           >
                             <X size={16} />
                           </button>
@@ -273,7 +281,6 @@ const ChatContainer = () => {
                           onMouseEnter={() => handleMouseEnter(message._id)}
                           onMouseLeave={handleMouseLeave}
                         >
-                          {/* Reply — all messages */}
                           <button
                             onClick={() => setReplyToMessage(message)}
                             className="bg-base-200 hover:bg-primary hover:text-white text-zinc-400 
@@ -282,8 +289,6 @@ const ChatContainer = () => {
                           >
                             <Reply size={13} />
                           </button>
-
-                          {/* Own messages only */}
                           {isOwn && (
                             <>
                               {message.text && (
