@@ -46,7 +46,7 @@ export const getMessage = async (req, res) => {
         { senderId: senderId, receiverId: userToChat },
         { senderId: userToChat, receiverId: senderId },
       ],
-    });
+    }).populate("replyTo");
 
     return res.status(200).json(message);
   } catch (error) {
@@ -56,7 +56,7 @@ export const getMessage = async (req, res) => {
 
 export const sendMessage = async (req, res) => {
   try {
-    const { text, image } = req.body;
+    const { text, image, replyTo } = req.body;
     const { id: receiverId } = req.params;
 
     const senderId = req.user._id;
@@ -74,9 +74,11 @@ export const sendMessage = async (req, res) => {
       receiverId,
       text,
       image,
+      replyTo: replyTo || null,
     });
 
     await newMessage.save();
+    await newMessage.populate("replyTo");
 
     // realtime socket fun to handle
     const receiverSocketId = getReceiverSocketId(receiverId);
