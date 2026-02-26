@@ -10,6 +10,7 @@ export const useMessageStore = create((set, get) => ({
   isUsersLoading: false,
   isMessagesLoading: false,
   unreadCounts: {},
+  replyToMessage: null,
 
   getUsers: async () => {
     set({ isUsersLoading: true });
@@ -30,6 +31,7 @@ export const useMessageStore = create((set, get) => ({
       set({
         messages: res.data,
         unreadCounts: { ...get().unreadCounts, [userId]: 0 },
+        replyToMessage: null,
       });
     } catch (error) {
       toast.error(error.response.data.message);
@@ -39,15 +41,22 @@ export const useMessageStore = create((set, get) => ({
   },
 
   sendMessage: async (messageData) => {
-    const { selectedUser, messages } = get();
+    const { selectedUser, messages, replyToMessage } = get();
     try {
       const res = await axiosInstance.post(
         `/message/send/${selectedUser._id}`,
-        messageData,
+        {
+          ...messageData,
+          replyTo: replyToMessage?._id || null,
+        },
       );
-      set({ messages: [...messages, res.data] });
 
-      // move user to top when we send a message too
+      set({
+        messages: [...messages, res.data],
+        replyToMessage: null,
+      });
+
+      // move user to top
       const { users } = get();
       const updatedUsers = [...users];
       const userIndex = updatedUsers.findIndex(
@@ -91,24 +100,23 @@ export const useMessageStore = create((set, get) => ({
     }
   },
 
+  setReplyToMessage: (message) => set({ replyToMessage: message }),
+  clearReplyToMessage: () => set({ replyToMessage: null }),
+
   subscribeToMessage: () => {
     const socket = useAuthStore.getState().socket;
     if (!socket) return;
 
-    // remove old listeners to avoid duplicates
     socket.off("newMessage");
     socket.off("messageDeleted");
     socket.off("messageUpdated");
 
     socket.on("newMessage", (newMessage) => {
-      // always get fresh state
       const { selectedUser, unreadCounts, users } = get();
 
       if (selectedUser && newMessage.senderId === selectedUser._id) {
-        // chat is open → add message directly
         set({ messages: [...get().messages, { ...newMessage, isNew: true }] });
       } else {
-        // chat not open → increment unread count
         set({
           unreadCounts: {
             ...unreadCounts,
@@ -117,7 +125,6 @@ export const useMessageStore = create((set, get) => ({
         });
       }
 
-      // move sender to top of users list
       const updatedUsers = [...users];
       const userIndex = updatedUsers.findIndex(
         (u) => u._id === newMessage.senderId,

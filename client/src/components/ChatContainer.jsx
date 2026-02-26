@@ -6,7 +6,7 @@ import MessageInput from "./MessageInput";
 import MessageSkeleton from "./Skeleton/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
-import { Trash2, Pencil, Check, X, Reply } from "lucide-react";
+import { Trash2, Pencil, Check, X, Reply, Mic } from "lucide-react";
 
 const ChatContainer = () => {
   const {
@@ -14,8 +14,6 @@ const ChatContainer = () => {
     isMessagesLoading,
     selectedUser,
     messages,
-    subscribeToMessage,
-    unSubscribeFromMessage,
     deleteMessage,
     updateMessage,
     setReplyToMessage,
@@ -27,9 +25,10 @@ const ChatContainer = () => {
   const [editingMessage, setEditingMessage] = useState(null);
 
   // swipe to reply
-  const [touchStart, setTouchStart] = useState(null);
+  const [touchStartX, setTouchStartX] = useState(null);
   const [swipingId, setSwipingId] = useState(null);
   const [swipeX, setSwipeX] = useState(0);
+  const [swipeTriggered, setSwipeTriggered] = useState(false);
 
   useEffect(() => {
     getMessages(selectedUser._id);
@@ -48,31 +47,33 @@ const ChatContainer = () => {
   };
 
   const handleTouchStart = (e, message) => {
-    setTouchStart(e.touches[0].clientX);
+    setTouchStartX(e.touches[0].clientX);
     setSwipingId(message._id);
     setSwipeX(0);
+    setSwipeTriggered(false);
   };
 
   const handleTouchMove = (e, message) => {
-    if (!touchStart) return;
-    const diff = e.touches[0].clientX - touchStart;
+    if (!touchStartX) return;
+    const diff = e.touches[0].clientX - touchStartX;
     const isOwn = message.senderId === authUser._id;
 
-    // own messages swipe left, received swipe right
     if (isOwn && diff < 0) {
-      setSwipeX(Math.max(diff, -60));
+      setSwipeX(Math.max(diff, -65));
     } else if (!isOwn && diff > 0) {
-      setSwipeX(Math.min(diff, 60));
+      setSwipeX(Math.min(diff, 65));
     }
   };
 
   const handleTouchEnd = (message) => {
-    if (Math.abs(swipeX) > 40) {
-      setReplyToMessage(message);
+    if (Math.abs(swipeX) >= 50 && !swipeTriggered) {
+      setSwipeTriggered(true);
+      setReplyToMessage(message); // ✅ this sets it in the input
     }
+    // animate back
     setSwipeX(0);
     setSwipingId(null);
-    setTouchStart(null);
+    setTouchStartX(null);
   };
 
   const isOnline = onlineUsers.includes(selectedUser._id);
@@ -123,7 +124,7 @@ const ChatContainer = () => {
                 onTouchMove={(e) => handleTouchMove(e, message)}
                 onTouchEnd={() => handleTouchEnd(message)}
               >
-                {/* Avatar — received only */}
+                {/* Avatar received only */}
                 {!isOwn && (
                   <div className="relative shrink-0 mr-2 self-end">
                     <img
@@ -131,25 +132,23 @@ const ChatContainer = () => {
                       alt="profile pic"
                       className="size-8 rounded-full border object-cover"
                     />
-                    {isOnline && (
-                      <span className="absolute bottom-0 right-0 size-2.5 bg-green-500 rounded-full ring-2 ring-base-100" />
-                    )}
                   </div>
                 )}
 
+                {/* Swipe container */}
                 <div
-                  className={`flex items-center gap-2 ${isOwn ? "flex-row-reverse" : "flex-row"}`}
+                  className={`flex items-center gap-1 ${isOwn ? "flex-row-reverse" : "flex-row"}`}
                   style={{
                     transform: isSwiping
                       ? `translateX(${swipeX}px)`
                       : "translateX(0)",
-                    transition: isSwiping ? "none" : "transform 0.2s ease",
+                    transition: isSwiping ? "none" : "transform 0.25s ease",
                   }}
                 >
-                  {/* Reply icon shown while swiping */}
+                  {/* Reply icon while swiping */}
                   {isSwiping && Math.abs(swipeX) > 20 && (
                     <div
-                      className={`${isOwn ? "order-last ml-1" : "order-first mr-1"}`}
+                      className={`${isOwn ? "ml-1" : "mr-1"} transition-opacity`}
                     >
                       <Reply size={18} className="text-primary" />
                     </div>
@@ -159,8 +158,8 @@ const ChatContainer = () => {
                   <div
                     className={`flex flex-col max-w-[65%] ${isOwn ? "items-end" : "items-start"}`}
                   >
-                    <div className="relative group">
-                      {/* Quoted reply preview inside bubble */}
+                    <div className="relative">
+                      {/* Quoted reply */}
                       {message.replyTo && (
                         <div
                           className={`mb-1 px-3 py-1.5 rounded-xl text-xs border-l-4 border-primary
@@ -172,9 +171,11 @@ const ChatContainer = () => {
                               : selectedUser.fullName}
                           </p>
                           <p className="opacity-60 truncate max-w-[200px]">
-                            {message.replyTo.image && !message.replyTo.text
-                              ? "📷 Photo"
-                              : message.replyTo.text}
+                            {message.replyTo.audio
+                              ? "🎤 Voice message"
+                              : message.replyTo.image && !message.replyTo.text
+                                ? "📷 Photo"
+                                : message.replyTo.text}
                           </p>
                         </div>
                       )}
@@ -186,6 +187,21 @@ const ChatContainer = () => {
                           alt="Attachment"
                           className="max-w-[200px] rounded-xl mb-1 object-cover"
                         />
+                      )}
+
+                      {/* Audio */}
+                      {message.audio && (
+                        <div
+                          className={`flex items-center gap-2 px-3 py-2 rounded-2xl
+                          ${isOwn ? "bg-primary text-primary-content" : "bg-base-300"}`}
+                        >
+                          <Mic size={16} className="shrink-0" />
+                          <audio
+                            src={message.audio}
+                            controls
+                            className="h-8 max-w-[180px]"
+                          />
+                        </div>
                       )}
 
                       {/* Edit mode */}
@@ -236,21 +252,25 @@ const ChatContainer = () => {
                         )
                       )}
 
-                      {/* Hover actions */}
+                      {/* ✅ Hover action buttons — fixed positioning */}
                       {hoveredMessage === message._id && !isEditing && (
                         <div
-                          className={`absolute -top-8 ${isOwn ? "right-0" : "left-0"} flex gap-1 z-10`}
+                          className={`
+                          absolute -top-8 flex gap-1 z-10
+                          ${isOwn ? "right-0" : "left-0"}
+                        `}
                         >
-                          {/* Reply — for all messages */}
+                          {/* Reply — all messages */}
                           <button
                             onClick={() => setReplyToMessage(message)}
-                            className="bg-base-300 hover:bg-primary hover:text-white text-zinc-400 rounded-full p-1.5 transition-all shadow-md"
+                            className="bg-base-200 hover:bg-primary hover:text-white text-zinc-400 
+                            rounded-full p-1.5 transition-all shadow-lg border border-base-300"
                             title="Reply"
                           >
-                            <Reply size={12} />
+                            <Reply size={13} />
                           </button>
 
-                          {/* Edit + Delete — own only */}
+                          {/* Own messages only */}
                           {isOwn && (
                             <>
                               {message.text && (
@@ -261,18 +281,20 @@ const ChatContainer = () => {
                                       text: message.text,
                                     })
                                   }
-                                  className="bg-base-300 hover:bg-blue-500 hover:text-white text-zinc-400 rounded-full p-1.5 transition-all shadow-md"
+                                  className="bg-base-200 hover:bg-blue-500 hover:text-white text-zinc-400 
+                                  rounded-full p-1.5 transition-all shadow-lg border border-base-300"
                                   title="Edit"
                                 >
-                                  <Pencil size={12} />
+                                  <Pencil size={13} />
                                 </button>
                               )}
                               <button
                                 onClick={() => deleteMessage(message._id)}
-                                className="bg-base-300 hover:bg-red-500 hover:text-white text-zinc-400 rounded-full p-1.5 transition-all shadow-md"
+                                className="bg-base-200 hover:bg-red-500 hover:text-white text-zinc-400 
+                                rounded-full p-1.5 transition-all shadow-lg border border-base-300"
                                 title="Delete"
                               >
-                                <Trash2 size={12} />
+                                <Trash2 size={13} />
                               </button>
                             </>
                           )}
@@ -280,7 +302,7 @@ const ChatContainer = () => {
                       )}
                     </div>
 
-                    {/* Time + edited + new */}
+                    {/* Time */}
                     <div className="flex items-center gap-1 mt-1 px-1">
                       <time className="text-xs opacity-40">
                         {formatMessageTime(message.createdAt)}
