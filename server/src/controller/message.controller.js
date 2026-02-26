@@ -6,15 +6,36 @@ import { getReceiverSocketId, io } from "../lib/socket.js";
 export const getAllUsers = async (req, res) => {
   try {
     const loggedInUser = req.user._id;
-    const filteredUsers = await User.find({
-      _id: { $ne: loggedInUser },
-    }).select("-password");
-    return res.status(200).json(filteredUsers);
+
+    const users = await User.find({ _id: { $ne: loggedInUser } }).select(
+      "-password",
+    );
+
+    const usersWithLastMessage = await Promise.all(
+      users.map(async (user) => {
+        const lastMessage = await Message.findOne({
+          $or: [
+            { senderId: loggedInUser, receiverId: user._id },
+            { senderId: user._id, receiverId: loggedInUser },
+          ],
+        }).sort({ createdAt: -1 });
+
+        return {
+          ...user.toObject(),
+          lastMessageAt: lastMessage?.createdAt || new Date(0),
+        };
+      }),
+    );
+
+    usersWithLastMessage.sort(
+      (a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt),
+    );
+
+    return res.status(200).json(usersWithLastMessage);
   } catch (error) {
     return res.status(400).json({ message: error.message });
   }
 };
-
 export const getMessage = async (req, res) => {
   try {
     const { id: userToChat } = req.params;

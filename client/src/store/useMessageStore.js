@@ -29,7 +29,6 @@ export const useMessageStore = create((set, get) => ({
       const res = await axiosInstance.get(`/message/${userId}`);
       set({
         messages: res.data,
-        // clear unread when chat opened
         unreadCounts: { ...get().unreadCounts, [userId]: 0 },
       });
     } catch (error) {
@@ -47,6 +46,18 @@ export const useMessageStore = create((set, get) => ({
         messageData,
       );
       set({ messages: [...messages, res.data] });
+
+      // move user to top when we send a message too
+      const { users } = get();
+      const updatedUsers = [...users];
+      const userIndex = updatedUsers.findIndex(
+        (u) => u._id === selectedUser._id,
+      );
+      if (userIndex > -1) {
+        const [user] = updatedUsers.splice(userIndex, 1);
+        updatedUsers.unshift(user);
+      }
+      set({ users: updatedUsers });
     } catch (error) {
       toast.error(error.response.data.message);
     }
@@ -84,16 +95,17 @@ export const useMessageStore = create((set, get) => ({
     const socket = useAuthStore.getState().socket;
     if (!socket) return;
 
+    // remove old listeners to avoid duplicates
     socket.off("newMessage");
     socket.off("messageDeleted");
     socket.off("messageUpdated");
 
     socket.on("newMessage", (newMessage) => {
-    
-      const { selectedUser, unreadCounts, messages } = get();
+      // always get fresh state
+      const { selectedUser, unreadCounts, users } = get();
 
       if (selectedUser && newMessage.senderId === selectedUser._id) {
-        // chat is open with this person → add message
+        // chat is open → add message directly
         set({ messages: [...get().messages, { ...newMessage, isNew: true }] });
       } else {
         // chat not open → increment unread count
@@ -104,6 +116,17 @@ export const useMessageStore = create((set, get) => ({
           },
         });
       }
+
+      // move sender to top of users list
+      const updatedUsers = [...users];
+      const userIndex = updatedUsers.findIndex(
+        (u) => u._id === newMessage.senderId,
+      );
+      if (userIndex > -1) {
+        const [user] = updatedUsers.splice(userIndex, 1);
+        updatedUsers.unshift(user);
+      }
+      set({ users: updatedUsers });
     });
 
     socket.on("messageDeleted", (messageId) => {
@@ -123,6 +146,7 @@ export const useMessageStore = create((set, get) => ({
 
   unSubscribeFromMessage: () => {
     const socket = useAuthStore.getState().socket;
+    if (!socket) return;
     socket.off("newMessage");
     socket.off("messageDeleted");
     socket.off("messageUpdated");

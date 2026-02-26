@@ -64,7 +64,7 @@ const Sidebar = () => {
                 ${selectedUser?._id === user._id ? "bg-base-300 ring-1 ring-base-300" : ""}
               `}
             >
-              {/* Avatar with unread badge only */}
+              {/* Avatar with unread badge */}
               <div className="relative shrink-0">
                 <img
                   src={user.profilePic || "/avatar.png"}
