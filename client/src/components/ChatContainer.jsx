@@ -224,7 +224,7 @@ const ChatContainer = () => {
                       {/* Text bubble */}
                       {!isEditing && message.text && (
                         <div
-                          className={`px-4 py-2 text-sm break-words leading-relaxed
+                          className={`mt-2 px-4 py-2 text-sm break-words leading-relaxed
                           ${
                             message.replyTo
                               ? "rounded-b-2xl rounded-tr-2xl rounded-tl-sm"
