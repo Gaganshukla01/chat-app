@@ -173,16 +173,16 @@ const ChatContainer = () => {
 
                   {/* Bubble — wider */}
                   <div
-                    className={`flex flex-col max-w-[100%] md:max-w-[70%] ${isOwn ? "items-end" : "items-start"}`}
+                    className={`flex flex-col max-w-[100%] md:max-w-[100%] ${isOwn ? "items-end" : "items-start"}`}
                   >
                     <div className="relative overflow-visible">
                       {/* Quoted reply */}
                       {message.replyTo && (
                         <div
-                          className={`mb-0.5 px-3 py-2 rounded-xl text-xs border-l-[3px] border-primary/80
+                          className={`mb-0.8 px-3 py-2 rounded-xl text-xs border-l-[3px] border-primary/80
                           ${isOwn ? "bg-primary/10" : "bg-base-300/80"}`}
                         >
-                          <p className="text-primary font-semibold text-[11px] mb-0.5">
+                          <p className="text-primary font-semibold text-[11px] mb-0.8">
                             {message.replyTo.senderId === authUser._id
                               ? "You"
                               : selectedUser.fullName}
