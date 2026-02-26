@@ -69,7 +69,7 @@ const ChatContainer = () => {
       <ChatHeader />
 
       {/* Messages scroll area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
         {messages.map((message, index) => {
           const isOwn = message.senderId === authUser._id;
           const isNew = message.isNew;
@@ -79,119 +79,134 @@ const ChatContainer = () => {
           return (
             <div
               key={message._id}
-              className={`chat ${isOwn ? "chat-end" : "chat-start"}`}
+              className={`flex items-end gap-2 ${isOwn ? "flex-row-reverse" : "flex-row"}`}
               ref={isLast ? messageRef : null}
               onMouseEnter={() => setHoveredMessage(message._id)}
               onMouseLeave={() => setHoveredMessage(null)}
             >
-              <div className="chat-image avatar">
-                <div className="size-10 rounded-full border relative">
+              {/* Avatar — only for received messages */}
+              {!isOwn && (
+                <div className="relative shrink-0">
                   <img
-                    src={
-                      isOwn
-                        ? authUser.profilePic || "/avatar.png"
-                        : selectedUser.profilePic || "/avatar.png"
-                    }
+                    src={selectedUser.profilePic || "/avatar.png"}
                     alt="profile pic"
+                    className="size-8 rounded-full border object-cover"
                   />
-                  {/* 🟢 Online green dot */}
-                  {!isOwn && isOnline && (
-                    <span className="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full ring-2 ring-base-100" />
+                  {/* Online dot */}
+                  {isOnline && (
+                    <span className="absolute bottom-0 right-0 size-2.5 bg-green-500 rounded-full ring-2 ring-base-100" />
                   )}
-                  {/* 🟢 New message pulse dot */}
-                  {isNew && !isOwn && (
-                    <span className="absolute -top-1 -right-1 size-3 bg-green-400 rounded-full ring-2 ring-base-100 animate-pulse" />
+                  {/* New message pulse dot */}
+                  {isNew && (
+                    <span className="absolute -top-1 -right-1 size-2.5 bg-green-400 rounded-full ring-2 ring-base-100 animate-pulse" />
                   )}
                 </div>
-              </div>
+              )}
 
-              <div className="chat-header mb-1 flex items-center gap-2">
-                <time className="text-xs opacity-50 ml-1">
-                  {formatMessageTime(message.createdAt)}
-                </time>
-                {message.isEdited && (
-                  <span className="text-xs opacity-40 italic">edited</span>
-                )}
-                {isNew && !isOwn && (
-                  <span className="text-xs text-green-500 font-semibold">
-                    New
-                  </span>
-                )}
-              </div>
-
-              <div className="chat-bubble flex flex-col relative">
-                {message.image && (
-                  <img
-                    src={message.image}
-                    alt="Attachment"
-                    className="sm:max-w-[200px] rounded-md mb-2"
-                  />
-                )}
-
-                {/* ✏️ Edit mode */}
-                {isEditing ? (
-                  <div className="flex items-center gap-2 min-w-[200px]">
-                    <input
-                      type="text"
-                      className="input input-sm flex-1 text-base-content bg-base-200 rounded"
-                      value={editingMessage.text}
-                      onChange={(e) =>
-                        setEditingMessage({
-                          ...editingMessage,
-                          text: e.target.value,
-                        })
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleEditSave(message._id);
-                        if (e.key === "Escape") setEditingMessage(null);
-                      }}
-                      autoFocus
+              {/* Bubble + time */}
+              <div
+                className={`flex flex-col max-w-[70%] ${isOwn ? "items-end" : "items-start"}`}
+              >
+                <div className="relative group">
+                  {/* Image attachment */}
+                  {message.image && (
+                    <img
+                      src={message.image}
+                      alt="Attachment"
+                      className="max-w-[200px] rounded-xl mb-1 object-cover"
                     />
-                    <button
-                      onClick={() => handleEditSave(message._id)}
-                      className="text-green-500 hover:text-green-400"
-                    >
-                      <Check size={16} />
-                    </button>
-                    <button
-                      onClick={() => setEditingMessage(null)}
-                      className="text-red-500 hover:text-red-400"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                ) : (
-                  message.text && <p>{message.text}</p>
-                )}
+                  )}
 
-                {/* 🗑️ ✏️ Action buttons on hover — own messages only */}
-                {isOwn && hoveredMessage === message._id && !isEditing && (
-                  <div className="absolute -top-7 right-0 flex gap-1">
-                    {message.text && (
-                      <button
-                        onClick={() =>
+                  {/* Edit mode */}
+                  {isEditing ? (
+                    <div className="flex items-center gap-2 min-w-[180px]">
+                      <input
+                        type="text"
+                        className="input input-sm flex-1 text-base-content bg-base-200 rounded"
+                        value={editingMessage.text}
+                        onChange={(e) =>
                           setEditingMessage({
-                            id: message._id,
-                            text: message.text,
+                            ...editingMessage,
+                            text: e.target.value,
                           })
                         }
-                        className="bg-base-300 hover:bg-blue-500 hover:text-white text-zinc-400 
-                        rounded-full p-1 transition-all duration-200 shadow"
-                        title="Edit"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleEditSave(message._id);
+                          if (e.key === "Escape") setEditingMessage(null);
+                        }}
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => handleEditSave(message._id)}
+                        className="text-green-500 hover:text-green-400"
                       >
-                        <Pencil size={12} />
+                        <Check size={16} />
                       </button>
-                    )}
-                    <button
-                      onClick={() => deleteMessage(message._id)}
-                      className="bg-base-300 hover:bg-red-500 hover:text-white text-zinc-400 
-                      rounded-full p-1 transition-all duration-200 shadow"
-                      title="Delete"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                )}
+                      <button
+                        onClick={() => setEditingMessage(null)}
+                        className="text-red-500 hover:text-red-400"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    message.text && (
+                      <div
+                        className={`px-3 py-2 rounded-2xl text-sm break-words ${
+                          isOwn
+                            ? "bg-primary text-primary-content rounded-br-none"
+                            : "bg-base-300 text-base-content rounded-bl-none"
+                        }`}
+                      >
+                        {message.text}
+                      </div>
+                    )
+                  )}
+
+                  {/* 🗑️ ✏️ Action buttons on hover — own messages only */}
+                  {isOwn && hoveredMessage === message._id && !isEditing && (
+                    <div className="absolute -top-8 right-0 flex gap-1 z-10">
+                      {message.text && (
+                        <button
+                          onClick={() =>
+                            setEditingMessage({
+                              id: message._id,
+                              text: message.text,
+                            })
+                          }
+                          className="bg-base-300 hover:bg-blue-500 hover:text-white 
+                          text-zinc-400 rounded-full p-1.5 transition-all duration-200 shadow-md"
+                          title="Edit"
+                        >
+                          <Pencil size={12} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => deleteMessage(message._id)}
+                        className="bg-base-300 hover:bg-red-500 hover:text-white 
+                        text-zinc-400 rounded-full p-1.5 transition-all duration-200 shadow-md"
+                        title="Delete"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Timestamp + edited + new badge */}
+                <div className="flex items-center gap-1 mt-1 px-1">
+                  <time className="text-xs opacity-40">
+                    {formatMessageTime(message.createdAt)}
+                  </time>
+                  {message.isEdited && (
+                    <span className="text-xs opacity-40 italic">edited</span>
+                  )}
+                  {isNew && !isOwn && (
+                    <span className="text-xs text-green-500 font-semibold">
+                      New
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           );
