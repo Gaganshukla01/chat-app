@@ -25,7 +25,6 @@ const ChatContainer = () => {
   const [hoveredMessage, setHoveredMessage] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
 
-  // swipe to reply
   const [touchStartX, setTouchStartX] = useState(null);
   const [swipingId, setSwipingId] = useState(null);
   const [swipeX, setSwipeX] = useState(0);
@@ -41,7 +40,6 @@ const ChatContainer = () => {
     }
   }, [messages]);
 
-  // cleanup hover timeout
   useEffect(() => {
     return () => clearTimeout(hoverTimeoutRef.current);
   }, []);
@@ -74,7 +72,6 @@ const ChatContainer = () => {
     if (!touchStartX) return;
     const diff = e.touches[0].clientX - touchStartX;
     const isOwn = message.senderId === authUser._id;
-
     if (isOwn && diff < 0) {
       setSwipeX(Math.max(diff, -65));
     } else if (!isOwn && diff > 0) {
@@ -140,7 +137,7 @@ const ChatContainer = () => {
                 onTouchMove={(e) => handleTouchMove(e, message)}
                 onTouchEnd={() => handleTouchEnd(message)}
               >
-                {/* Avatar received only */}
+                {/* Avatar — received only */}
                 {!isOwn && (
                   <div className="relative shrink-0 mr-2 self-end">
                     <img
@@ -163,9 +160,7 @@ const ChatContainer = () => {
                 >
                   {/* Reply icon while swiping */}
                   {isSwiping && Math.abs(swipeX) > 20 && (
-                    <div
-                      className={`${isOwn ? "ml-1" : "mr-1"} transition-opacity`}
-                    >
+                    <div className={`${isOwn ? "ml-1" : "mr-1"}`}>
                       <Reply size={18} className="text-primary" />
                     </div>
                   )}
@@ -175,18 +170,18 @@ const ChatContainer = () => {
                     className={`flex flex-col max-w-[65%] ${isOwn ? "items-end" : "items-start"}`}
                   >
                     <div className="relative">
-                      {/* Quoted reply */}
+                      {/* Quoted reply preview */}
                       {message.replyTo && (
                         <div
-                          className={`mb-1 px-3 py-1.5 rounded-xl text-xs border-l-4 border-primary
-                          ${isOwn ? "bg-primary/20" : "bg-base-200"}`}
+                          className={`mb-1 px-2 py-1.5 rounded-lg text-xs border-l-[3px] border-primary/80
+                          ${isOwn ? "bg-black/20 rounded-br-none" : "bg-black/10 rounded-bl-none"}`}
                         >
-                          <p className="text-primary font-semibold mb-0.5">
+                          <p className="text-primary font-semibold text-[11px] mb-0.5">
                             {message.replyTo.senderId === authUser._id
                               ? "You"
                               : selectedUser.fullName}
                           </p>
-                          <p className="opacity-60 truncate max-w-[200px]">
+                          <p className="opacity-50 truncate max-w-[180px] text-[11px] leading-relaxed">
                             {message.replyTo.audio
                               ? "🎤 Voice message"
                               : message.replyTo.image && !message.replyTo.text
@@ -220,8 +215,24 @@ const ChatContainer = () => {
                         </div>
                       )}
 
+                      {/* Text bubble */}
+                      {!isEditing && message.text && (
+                        <div
+                          className={`px-3 py-2 rounded-2xl text-sm break-words leading-relaxed
+                          ${
+                            isOwn
+                              ? "bg-primary text-primary-content rounded-br-none"
+                              : "bg-base-300 text-base-content rounded-bl-none"
+                          }
+                          ${message.replyTo ? "rounded-tl-sm rounded-tr-sm" : ""}
+                        `}
+                        >
+                          {message.text}
+                        </div>
+                      )}
+
                       {/* Edit mode */}
-                      {isEditing ? (
+                      {isEditing && (
                         <div className="flex items-center gap-2 min-w-[180px]">
                           <input
                             type="text"
@@ -242,33 +253,20 @@ const ChatContainer = () => {
                           />
                           <button
                             onClick={() => handleEditSave(message._id)}
-                            className="text-green-500"
+                            className="text-green-500 hover:text-green-400"
                           >
                             <Check size={16} />
                           </button>
                           <button
                             onClick={() => setEditingMessage(null)}
-                            className="text-red-500"
+                            className="text-red-500 hover:text-red-400"
                           >
                             <X size={16} />
                           </button>
                         </div>
-                      ) : (
-                        message.text && (
-                          <div
-                            className={`px-4 py-2 rounded-2xl text-sm break-words leading-relaxed
-                            ${
-                              isOwn
-                                ? "bg-primary text-primary-content rounded-br-none"
-                                : "bg-base-300 text-base-content rounded-bl-none"
-                            }`}
-                          >
-                            {message.text}
-                          </div>
-                        )
                       )}
 
-                      {/* ✅ Hover action buttons */}
+                      {/* Hover action buttons */}
                       {hoveredMessage === message._id && !isEditing && (
                         <div
                           className={`absolute -top-8 flex gap-1 z-20 ${isOwn ? "right-0" : "left-0"}`}
@@ -318,12 +316,12 @@ const ChatContainer = () => {
                     </div>
 
                     {/* Time + edited + new */}
-                    <div className="flex items-center gap-1 mt-1 px-1">
-                      <time className="text-xs opacity-40">
+                    <div className="flex items-center gap-1 mt-0.5 px-1">
+                      <time className="text-xs opacity-30">
                         {formatMessageTime(message.createdAt)}
                       </time>
                       {message.isEdited && (
-                        <span className="text-xs opacity-40 italic">
+                        <span className="text-xs opacity-30 italic">
                           edited
                         </span>
                       )}
