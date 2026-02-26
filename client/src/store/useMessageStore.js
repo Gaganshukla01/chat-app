@@ -89,7 +89,7 @@ export const useMessageStore = create((set, get) => ({
     socket.off("messageUpdated");
 
     socket.on("newMessage", (newMessage) => {
-      // 👇 always get FRESH state, not stale closure
+    
       const { selectedUser, unreadCounts, messages } = get();
 
       if (selectedUser && newMessage.senderId === selectedUser._id) {

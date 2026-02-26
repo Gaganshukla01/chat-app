@@ -26,6 +26,17 @@ const ChatContainer = () => {
   const [editingMessage, setEditingMessage] = useState(null);
 
   useEffect(() => {
+    getMessages(selectedUser._id);
+    subscribeToMessage();
+    return () => unSubscribeFromMessage();
+  }, [
+    selectedUser._id,
+    getMessages,
+    subscribeToMessage,
+    unSubscribeFromMessage,
+  ]);
+
+  useEffect(() => {
     if (messageRef.current && messages) {
       messageRef.current.scrollIntoView({ behavior: "smooth" });
     }
