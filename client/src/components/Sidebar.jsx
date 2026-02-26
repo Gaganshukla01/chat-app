@@ -23,7 +23,7 @@ const Sidebar = () => {
   return (
     <aside
       className={`
-      h-full border-r border-base-300 flex flex-col transition-all duration-200
+      h-full w-full md:w-20 lg:w-72 border-r border-base-300 flex flex-col transition-all duration-200
       ${selectedUser ? "hidden md:flex w-20 lg:w-72" : "flex w-full md:w-20 lg:w-72"}
     `}
     >
