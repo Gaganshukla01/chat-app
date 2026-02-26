@@ -1,11 +1,13 @@
 import { useRef, useState } from "react";
-import { Image, Send, X } from "lucide-react";
+import { Image, Send, X, Smile } from "lucide-react";
 import toast from "react-hot-toast";
 import { useMessageStore } from "../store/useMessageStore";
+import EmojiPicker from "emoji-picker-react";
 
 const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef(null);
   const { sendMessage } = useMessageStore();
 
@@ -15,11 +17,8 @@ const MessageInput = () => {
       toast.error("Please select an image file");
       return;
     }
-
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result);
-    };
+    reader.onloadend = () => setImagePreview(reader.result);
     reader.readAsDataURL(file);
   };
 
@@ -28,20 +27,18 @@ const MessageInput = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handleEmojiClick = (emojiData) => {
+    setText((prev) => prev + emojiData.emoji);
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
-   
-// remove await
     try {
-      await sendMessage({
-        text: text.trim(),
-        image: imagePreview,
-      });
-
-      // Clear form
+      await sendMessage({ text: text.trim(), image: imagePreview });
       setText("");
       setImagePreview(null);
+      setShowEmojiPicker(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -70,15 +67,41 @@ const MessageInput = () => {
         </div>
       )}
 
+      {/* Emoji Picker */}
+      {showEmojiPicker && (
+        <div className="absolute bottom-20 left-4 z-50">
+          <EmojiPicker
+            onEmojiClick={handleEmojiClick}
+            theme="dark"
+            emojiStyle="google" // 👈 google style = 3D looking emojis
+            searchDisabled={false}
+            skinTonesDisabled={false}
+            height={400}
+            width={320}
+          />
+        </div>
+      )}
+
       <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-        <div className="flex-1 flex gap-2">
+        <div className="flex-1 flex gap-2 items-center relative">
+          {/* Emoji button */}
+          <button
+            type="button"
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className={`btn btn-circle btn-sm ${showEmojiPicker ? "text-yellow-400" : "text-zinc-400"}`}
+          >
+            <Smile size={20} />
+          </button>
+
           <input
             type="text"
             className="w-full input input-bordered rounded-lg input-sm sm:input-md"
             placeholder="Type a message..."
             value={text}
             onChange={(e) => setText(e.target.value)}
-          />  
+            onFocus={() => setShowEmojiPicker(false)}
+          />
+
           <input
             type="file"
             accept="image/*"
@@ -89,13 +112,14 @@ const MessageInput = () => {
 
           <button
             type="button"
-            className={`hidden sm:flex btn btn-circle
-                     ${imagePreview ? "text-emerald-500" : "text-zinc-400"}`}
+            className={`hidden sm:flex btn btn-circle btn-sm
+              ${imagePreview ? "text-emerald-500" : "text-zinc-400"}`}
             onClick={() => fileInputRef.current?.click()}
           >
             <Image size={20} />
           </button>
         </div>
+
         <button
           type="submit"
           className="btn btn-sm btn-circle"
@@ -107,4 +131,5 @@ const MessageInput = () => {
     </div>
   );
 };
+
 export default MessageInput;
