@@ -8,16 +8,6 @@ import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
 import { Trash2, Pencil, Check, X } from "lucide-react";
 
-import React, { useRef, useState } from "react";
-import { useMessageStore } from "../store/useMessageStore";
-import { useEffect } from "react";
-import ChatHeader from "./ChatHeader";
-import MessageInput from "./MessageInput";
-import MessageSkeleton from "./Skeleton/MessageSkeleton";
-import { useAuthStore } from "../store/useAuthStore";
-import { formatMessageTime } from "../lib/utils";
-import { Trash2, Pencil, Check, X } from "lucide-react";
-
 const ChatContainer = () => {
   const {
     getMessages,
