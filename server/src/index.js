@@ -12,6 +12,7 @@ dotenv.config()
 
 const PORT = process.env.PORT || 4000
 const Fronted_Url = process.env.FRONTED_URL
+app.set("trust proxy", 1)
 
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cors({
